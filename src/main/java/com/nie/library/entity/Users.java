@@ -1,0 +1,54 @@
+package com.nie.library.entity;
+
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import java.time.LocalDateTime;
+import java.io.Serializable;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+/**
+ * <p>
+ * 用户信息表
+ * </p>
+ *
+ * @author nie
+ * @since 2025-12-11
+ */
+@Data
+  @EqualsAndHashCode(callSuper = false)
+    public class Users implements Serializable {
+
+    private static final long serialVersionUID=1L;
+
+      @TableId(value = "user_id", type = IdType.AUTO)
+      private Integer userId;
+
+    private String username;
+
+    private String password;
+
+    private String realName;
+
+    private String email;
+
+    private String phone;
+
+    private Integer userTypeId;
+
+    private String studentId;
+
+    private Integer borrowLimit;
+
+    private Integer borrowedCount;
+
+    private String accountStatus;
+
+    private LocalDateTime lastLoginTime;
+
+    private LocalDateTime registerTime;
+
+    private String notes;
+
+
+}
