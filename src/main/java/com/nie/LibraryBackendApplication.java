@@ -1,4 +1,5 @@
-package com.nie.library;
+package com.nie;
+
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

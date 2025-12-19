@@ -40,6 +40,8 @@ import lombok.EqualsAndHashCode;
 
     private String summary;
 
+    private Integer categoryId;
+
     private String coverImage;
 
     private Integer totalCopies;
