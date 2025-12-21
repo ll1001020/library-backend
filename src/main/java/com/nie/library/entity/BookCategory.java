@@ -1,15 +1,18 @@
 package com.nie.library.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import java.time.LocalDateTime;
 import java.io.Serializable;
+import java.util.List;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
  * <p>
- * 
+ *
  * </p>
  *
  * @author nie
@@ -62,5 +65,7 @@ import lombok.EqualsAndHashCode;
      */
       private LocalDateTime updateTime;
 
+      @TableField(exist = false)
+      private List<BookCategory> children;
 
 }

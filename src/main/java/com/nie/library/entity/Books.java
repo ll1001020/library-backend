@@ -36,7 +36,7 @@ import lombok.EqualsAndHashCode;
 
     private LocalDate publishDate;
 
-    private BigDecimal price;
+    private Double price;
 
     private String summary;
 

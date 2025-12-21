@@ -1,9 +1,12 @@
 package com.nie.library.controller;
 
 
-import org.springframework.web.bind.annotation.RequestMapping;
-
-import org.springframework.web.bind.annotation.RestController;
+import com.nie.library.VO.ResultVO;
+import com.nie.library.form.PaginationForm;
+import com.nie.library.form.SearchForm;
+import com.nie.library.service.IBookCategoryService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * <p>
@@ -16,6 +19,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/library/book-category")
 public class BookCategoryController {
+    @Autowired
+    private IBookCategoryService ibookCategoryService;
+    @GetMapping("/getBookCategoryTree")
+    public ResultVO getBookCategoryTree(){  // 获取书籍分类树
+        ResultVO resultVO = ibookCategoryService.getBookCategoryTree();
+        return resultVO;
+    }
 
 }
 

@@ -26,6 +26,10 @@ import lombok.EqualsAndHashCode;
 
     private Integer bookId;
 
+    private String isbn;
+
+    private String title;
+
     private String barcode;
 
     private String location;
