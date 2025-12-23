@@ -2,11 +2,14 @@ package com.nie.library.controller;
 
 
 import com.nie.library.VO.ResultVO;
+import com.nie.library.form.AddCopyForm;
+import com.nie.library.form.EditCopyForm;
 import com.nie.library.form.PaginationForm;
 import com.nie.library.form.SearchForm;
 import com.nie.library.service.IBookCopiesService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -53,5 +56,25 @@ public class BookCopiesController {
         return resultVO;
     }
 
+    // 编辑选中书籍信息
+    @PostMapping("/editSelectCopy")
+    public ResultVO editSelectCopy(@RequestBody EditCopyForm editCopyForm){
+        ResultVO resultVO = this.ibookCopiesService.editSelectCopy(editCopyForm);
+        return resultVO;
+    }
+
+    // 新增根据图书ID新增副本信息
+    @PostMapping("/addCopy")
+    public ResultVO addCopy(@RequestBody AddCopyForm addCopyForm){
+        ResultVO resultVO = this.ibookCopiesService.addCopy(addCopyForm);
+        return resultVO;
+    }
+
+    // 批量新增图书副本
+    @PostMapping("/addBatchCopy")
+    public ResultVO addBatchCopy(@RequestParam("file") MultipartFile file){
+        ResultVO resultVO = this.ibookCopiesService.addBatchCopy(file);
+        return resultVO;
+    }
 }
 

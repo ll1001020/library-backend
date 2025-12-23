@@ -30,19 +30,19 @@ import lombok.EqualsAndHashCode;
 
     private String realName;
 
-    private String email;
+    private String studentId;
 
     private String phone;
 
     private Integer userTypeId;
 
-    private String studentId;
-
     private Integer borrowLimit;
 
     private Integer borrowedCount;
 
-    private String accountStatus;
+    private Integer borrowLimitDay;
+
+    private String status;
 
     private LocalDateTime lastLoginTime;
 

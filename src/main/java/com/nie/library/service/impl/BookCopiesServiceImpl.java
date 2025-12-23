@@ -1,5 +1,7 @@
 package com.nie.library.service.impl;
 
+import com.alibaba.excel.EasyExcel;
+import com.alibaba.excel.event.AnalysisEventListener;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -7,16 +9,17 @@ import com.nie.library.VO.PaginationVO;
 import com.nie.library.VO.ResultVO;
 import com.nie.library.entity.BookCopies;
 import com.nie.library.entity.Books;
-import com.nie.library.form.PaginationForm;
-import com.nie.library.form.SearchForm;
+import com.nie.library.form.*;
 import com.nie.library.mapper.BookCopiesMapper;
 import com.nie.library.mapper.BooksMapper;
 import com.nie.library.service.IBookCopiesService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.awt.print.Book;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -35,6 +38,8 @@ public class BookCopiesServiceImpl extends ServiceImpl<BookCopiesMapper, BookCop
 
     @Autowired
     private BookCopiesMapper bookCopiesMapper;
+    @Autowired
+    private BooksMapper booksMapper;
 
     @Override
     public ResultVO getBookCopy(PaginationForm paginationForm) {  // 获取所有书籍副本列表
@@ -163,6 +168,179 @@ public class BookCopiesServiceImpl extends ServiceImpl<BookCopiesMapper, BookCop
             resultVO.setCode(-1);
             resultVO.setMsg("选中书籍不存在，请重新选择");
         }
+        return resultVO;
+    }
+
+    @Override
+    public ResultVO editSelectCopy(EditCopyForm editCopyForm) { // 修改选中书籍
+        LambdaQueryWrapper<BookCopies> queryWrapper = new LambdaQueryWrapper<>();
+        LambdaQueryWrapper<Books> booksQueryWrapper = new LambdaQueryWrapper<>();
+        ResultVO resultVO = new ResultVO();
+        queryWrapper.eq(BookCopies::getCopyId,editCopyForm.getCopyId());
+        booksQueryWrapper.eq(Books::getBookId,editCopyForm.getBookId());
+        Books book = booksMapper.selectOne(booksQueryWrapper);
+        if(book == null){
+            resultVO.setCode(-3);
+            resultVO.setMsg("图书列表暂无输入的该书籍ID，请前往图书列表核对!");
+            resultVO.setData(null);
+            return resultVO;
+        }
+        if(editCopyForm.getBarcode() == null || editCopyForm.getBarcode().isEmpty()
+            || editCopyForm.getLocation() == null || editCopyForm.getLocation().isEmpty()
+                || editCopyForm.getStatus() == null || editCopyForm.getStatus().isEmpty()
+        ){
+            resultVO.setCode(-4);
+            resultVO.setMsg("馆藏编号、位置、状态均不允许为空!");
+            return  resultVO;
+        }
+        BookCopies copy = bookCopiesMapper.selectOne(queryWrapper);
+        if(copy != null){
+            copy.setBookId(editCopyForm.getBookId());
+            copy.setIsbn(book.getIsbn());
+            copy.setTitle(book.getTitle());
+            copy.setBarcode(editCopyForm.getBarcode());
+            copy.setLocation(editCopyForm.getLocation());
+            copy.setStatus(editCopyForm.getStatus());
+            copy.setPurchaseDate(editCopyForm.getPurchaseDate());
+            copy.setNotes(editCopyForm.getNotes());
+            int rows = bookCopiesMapper.updateById(copy);
+            if(rows > 0){
+                resultVO.setCode(0);
+                resultVO.setMsg("修改成功，已更新该书籍信息");
+                resultVO.setData(rows);
+            }else{
+                resultVO.setCode(-2);
+                resultVO.setMsg("修改失败");
+                resultVO.setData(null);
+            }
+        }else{
+            resultVO.setCode(-2);
+            resultVO.setMsg("没有找到对应书籍信息！");
+            resultVO.setData(null);
+            return resultVO;
+        }
+        return resultVO;
+    }
+
+    @Override
+    public ResultVO addCopy(AddCopyForm addCopyForm) {
+        ResultVO resultVO = new ResultVO();
+        LambdaQueryWrapper<Books> booksQueryWrapper = new LambdaQueryWrapper<>();
+        booksQueryWrapper.eq(Books::getBookId,addCopyForm.getBookId());
+        Books book = booksMapper.selectOne(booksQueryWrapper);
+        if(book == null){
+            resultVO.setCode(-1);
+            resultVO.setMsg("图书列表暂无输入的该书籍ID，请前往图书列表核对!");
+            resultVO.setData(null);
+            return resultVO;
+        }
+        if(addCopyForm.getLocation() == null || addCopyForm.getLocation().isEmpty()
+                || addCopyForm.getBarcode() == null || addCopyForm.getBarcode().isEmpty()
+            || addCopyForm.getStatus() == null || addCopyForm.getStatus().isEmpty()
+        ){
+            resultVO.setCode(-2);
+            resultVO.setMsg("请完善图书信息再提交!");
+            return resultVO;
+        }
+        BookCopies copy = new BookCopies();
+        copy.setBookId(addCopyForm.getBookId());
+        copy.setIsbn(book.getIsbn());
+        copy.setTitle(book.getTitle());
+        copy.setBarcode(addCopyForm.getBarcode());
+        copy.setLocation(addCopyForm.getLocation());
+        copy.setStatus(addCopyForm.getStatus());
+        copy.setPurchaseDate(addCopyForm.getPurchaseDate());
+        copy.setNotes(addCopyForm.getNotes());
+        int rows = bookCopiesMapper.insert(copy);
+        if(rows > 0){
+            resultVO.setCode(0);
+            resultVO.setMsg("成功插入"+rows+"条记录");
+            resultVO.setData(rows);
+        }
+        return resultVO;
+    }
+
+    @Override
+    public ResultVO addBatchCopy(MultipartFile file) {
+        ResultVO resultVO = new ResultVO();
+        // 1.检查上传的excel文件是否为空
+        if(file == null){
+            resultVO.setCode(-1);
+            resultVO.setMsg("请上传excel文件!!!");
+            return resultVO;
+        }
+
+        // 2. 检查上传的文件类型
+        String fileName = file.getOriginalFilename();
+        if (fileName == null ||
+                (!fileName.toLowerCase().endsWith(".xls") && !fileName.toLowerCase().endsWith(".xlsx"))) {
+            resultVO.setCode(-2);
+            resultVO.setMsg("请上传正确的excel文件（.xls或.xlsx格式）!!!");
+            return resultVO;
+        }
+
+        // 3.开始读取数据
+        List<AddCopyExcelForm> excelForms = new ArrayList<>();
+        try {
+            EasyExcel.read(file.getInputStream(), AddCopyExcelForm.class,
+                    new AnalysisEventListener<AddCopyExcelForm>() {
+                        @Override
+                        public void invoke(AddCopyExcelForm data, com.alibaba.excel.context.AnalysisContext context) {
+                            excelForms.add(data);
+                        }
+                        @Override
+                        public void doAfterAllAnalysed(com.alibaba.excel.context.AnalysisContext context) {}
+                    }).sheet().doRead();
+        } catch (IOException e) {
+            resultVO.setCode(-1);
+            resultVO.setMsg("读取Excel文件失败");
+            return resultVO;
+        }
+
+        int successCount = 0;
+        int failCount = 0;
+        List<BookCopies> bookCopyList = new ArrayList<>();
+        for (AddCopyExcelForm excelForm : excelForms) {
+            // 基础校验
+            LambdaQueryWrapper<Books> booksQueryWrapper = new LambdaQueryWrapper<>();
+            booksQueryWrapper.eq(Books::getBookId,excelForm.getBookId());
+            Books book = booksMapper.selectOne(booksQueryWrapper);
+            if (book == null ||
+                    excelForm.getLocation() == null || excelForm.getLocation().isEmpty()
+                    || excelForm.getBarcode() == null || excelForm.getBarcode().isEmpty()
+                    || excelForm.getStatus() == null || excelForm.getStatus().isEmpty()
+            ) {
+                resultVO.setCode(-2);
+                resultVO.setMsg("请严格检查上传的Excel文件是否规范");
+                return resultVO;
+            }
+
+            // 保存
+            try {
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+                LocalDate time = LocalDate.parse(excelForm.getPurchaseDate(), formatter);
+                BookCopies bookCopy = new BookCopies();
+                bookCopy.setBookId(excelForm.getBookId());
+                bookCopy.setIsbn(book.getIsbn());
+                bookCopy.setTitle(book.getTitle());
+                bookCopy.setBarcode(excelForm.getBarcode());
+                bookCopy.setLocation(excelForm.getLocation());
+                bookCopy.setPurchaseDate(time);
+                bookCopy.setNotes(excelForm.getNotes());
+                bookCopyList.add(bookCopy);
+            } catch (Exception ignored) {
+                resultVO.setCode(-2);
+                resultVO.setMsg("请严格检查上传的Excel文件是否规范");
+                return resultVO;
+            }
+        }
+        for(BookCopies bookCopy : bookCopyList){
+            bookCopiesMapper.insert(bookCopy);
+            successCount++;
+        }
+        resultVO.setCode(0);
+        resultVO.setData(successCount);
+        resultVO.setMsg("成功导入" + successCount + "本书籍");
         return resultVO;
     }
 }
