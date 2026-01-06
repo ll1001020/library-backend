@@ -38,7 +38,7 @@ import lombok.EqualsAndHashCode;
 
     private Integer borrowLimit;
 
-    private Integer borrowedCount;
+    private Integer borrowCount;
 
     private Integer borrowLimitDay;
 

@@ -130,7 +130,7 @@ public class BookCopiesServiceImpl extends ServiceImpl<BookCopiesMapper, BookCop
     }
 
     @Override
-    public ResultVO deleteSelectCopy(Integer id) {
+    public ResultVO deleteSelectCopy(Integer id) {  // 删除选中书籍副本
         LambdaQueryWrapper<BookCopies> queryWrapper = new LambdaQueryWrapper<>();
         ResultVO resultVO = new ResultVO();
         queryWrapper.eq(BookCopies::getCopyId,id);
@@ -149,7 +149,7 @@ public class BookCopiesServiceImpl extends ServiceImpl<BookCopiesMapper, BookCop
     }
 
     @Override
-    public ResultVO deleteSelectCopyList(List<Integer> ids) {
+    public ResultVO deleteSelectCopyList(List<Integer> ids) {  // 批量删除选中书籍副本
         LambdaQueryWrapper<BookCopies> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.in(BookCopies::getCopyId,ids);
         List<BookCopies> copyList = bookCopiesMapper.selectList(queryWrapper);
@@ -341,6 +341,25 @@ public class BookCopiesServiceImpl extends ServiceImpl<BookCopiesMapper, BookCop
         resultVO.setCode(0);
         resultVO.setData(successCount);
         resultVO.setMsg("成功导入" + successCount + "本书籍");
+        return resultVO;
+    }
+
+    @Override
+    public ResultVO getBookCopyById(Integer id) {  // 根据ID获取对应书籍可借副本信息，只取第一条
+        ResultVO resultVO = new ResultVO();
+        LambdaQueryWrapper<BookCopies> bookCopyQueryWrapper = new LambdaQueryWrapper<>();
+        bookCopyQueryWrapper.eq(BookCopies::getBookId,id);
+        bookCopyQueryWrapper.eq(BookCopies::getStatus,"在架");
+        bookCopyQueryWrapper.last("limit 1");
+        BookCopies bookCopy = bookCopiesMapper.selectOne(bookCopyQueryWrapper);
+        if(bookCopy == null){
+            resultVO.setCode(-1);
+            resultVO.setMsg("当前书籍暂不可借，请看下其他书籍吧");
+        }else{
+            resultVO.setCode(0);
+            resultVO.setMsg("获取可借出书籍信息成功");
+            resultVO.setData(bookCopy);
+        }
         return resultVO;
     }
 }

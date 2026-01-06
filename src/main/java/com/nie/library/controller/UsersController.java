@@ -103,5 +103,12 @@ public class UsersController {
         return resultVO;
     }
 
+    // 获取当前用户所有借阅相关信息，根据用户ID
+    @GetMapping("/getPersonalBorrowInfoByUserId")
+    public ResultVO getPersonalBorrowInfoByUserId(Integer id){
+        ResultVO resultVO = this.iUsersService.getPersonalBorrowInfoByUserId(id);
+        return resultVO;
+    }
+
 }
 

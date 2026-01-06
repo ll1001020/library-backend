@@ -26,7 +26,11 @@ import lombok.EqualsAndHashCode;
 
     private Integer userId;
 
+    private String username;
+
     private Integer copyId;
+
+    private String title;
 
     private LocalDateTime borrowDate;
 
@@ -38,7 +42,7 @@ import lombok.EqualsAndHashCode;
 
     private Integer renewCount;
 
-    private Integer operatorId;
+    private Integer creatorId;
 
 
 }

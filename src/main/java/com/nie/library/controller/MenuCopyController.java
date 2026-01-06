@@ -1,8 +1,8 @@
 package com.nie.library.controller;
 
 import com.nie.library.VO.ResultVO;
-import com.nie.library.form.AddMenuCopyForm;
-import com.nie.library.form.EditMenuCopyForm;
+import com.nie.library.form.AddMenuForm;
+import com.nie.library.form.EditMenuForm;
 import com.nie.library.form.PaginationForm;
 import com.nie.library.form.SearchForm;
 import com.nie.library.service.MenuCopyService;
@@ -46,15 +46,15 @@ public class MenuCopyController {
 
     // 为前台菜单副本表新增菜单
     @PostMapping("/addMenuCopy")
-    public ResultVO addMenuCopy(@RequestBody AddMenuCopyForm addMenuCopyForm){
-        ResultVO resultVO = this.imenuCopyService.addMenuCopy(addMenuCopyForm);
+    public ResultVO addMenuCopy(@RequestBody AddMenuForm addMenuForm){
+        ResultVO resultVO = this.imenuCopyService.addMenuCopy(addMenuForm);
         return resultVO;
     }
 
     // 修改选中的前台菜单副本
     @PostMapping("/editSelectMenuCopy")
-    public ResultVO editSelectMenuCopy(@RequestBody EditMenuCopyForm editMenuCopyForm){
-        ResultVO resultVO = this.imenuCopyService.editSelectMenuCopy(editMenuCopyForm);
+    public ResultVO editSelectMenuCopy(@RequestBody EditMenuForm editMenuForm){
+        ResultVO resultVO = this.imenuCopyService.editSelectMenuCopy(editMenuForm);
         return resultVO;
     }
 
@@ -62,6 +62,13 @@ public class MenuCopyController {
     @GetMapping("/deleteSelectMenuCopy")
     public ResultVO deleteSelectMenuCopy(Integer id){
         ResultVO resultVO = this.imenuCopyService.deleteSelectMenuCopy(id);
+        return resultVO;
+    }
+
+    // 更新前台主菜单
+    @GetMapping("/updateFrontMenu")
+    public ResultVO updateFrontMenu(){
+        ResultVO resultVO = this.imenuCopyService.updateFrontMenu();
         return resultVO;
     }
 

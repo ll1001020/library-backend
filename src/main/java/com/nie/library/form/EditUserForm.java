@@ -8,6 +8,8 @@ public class EditUserForm {
 
     private String username;
 
+    private String password;
+
     private String realName;
 
     private String studentId;

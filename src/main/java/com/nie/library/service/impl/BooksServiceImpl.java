@@ -9,6 +9,7 @@ import com.nie.library.VO.PaginationVO;
 import com.nie.library.VO.ResultVO;
 import com.nie.library.entity.Books;
 import com.nie.library.form.*;
+import com.nie.library.mapper.BookCopiesMapper;
 import com.nie.library.mapper.BooksMapper;
 import com.nie.library.service.IBooksService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -33,6 +34,8 @@ import java.util.*;
 public class BooksServiceImpl extends ServiceImpl<BooksMapper, Books> implements IBooksService {
     @Autowired
     private BooksMapper booksMapper;
+    @Autowired
+    private BookCopiesMapper bookCopiesMapper;
 
     @Override
     public ResultVO getAllBooksList() {
@@ -361,6 +364,25 @@ public class BooksServiceImpl extends ServiceImpl<BooksMapper, Books> implements
             resultVO.setMsg("获取书籍分类对应卡片数据失败");
         }
 
+        return resultVO;
+    }
+
+    @Override
+    public ResultVO getNewBookList() {  // 获取本月最新书籍
+        // 获取本月创建的书籍返回
+        ResultVO resultVO = new ResultVO();
+        LambdaQueryWrapper<Books> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.apply("DATE_FORMAT(create_time,'%Y-%m') = {0}",
+                LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM")));
+        List<Books> list = booksMapper.selectList(queryWrapper);
+        if(list == null || list.size()<1){
+            resultVO.setCode(-1);
+            resultVO.setMsg("本月暂无新录入书籍");
+            return resultVO;
+        }
+        resultVO.setCode(0);
+        resultVO.setData(list);
+        resultVO.setMsg("获取最新书籍数据成功");
         return resultVO;
     }
 }

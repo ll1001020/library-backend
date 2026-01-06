@@ -76,5 +76,12 @@ public class BookCopiesController {
         ResultVO resultVO = this.ibookCopiesService.addBatchCopy(file);
         return resultVO;
     }
+
+    // 根据ID获取对应书籍可借副本信息，只取第一条
+    @GetMapping("/getBookCopyById")
+    public ResultVO getBookCopyById(@RequestParam Integer id){
+        ResultVO resultVO = this.ibookCopiesService.getBookCopyById(id);
+        return resultVO;
+    }
 }
 

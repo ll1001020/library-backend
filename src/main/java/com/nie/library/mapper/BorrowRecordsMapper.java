@@ -1,7 +1,9 @@
 package com.nie.library.mapper;
 
+import com.nie.library.VO.ResultVO;
 import com.nie.library.entity.BorrowRecords;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.nie.library.form.PaginationForm;
 
 /**
  * <p>
@@ -12,5 +14,4 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  * @since 2025-12-11
  */
 public interface BorrowRecordsMapper extends BaseMapper<BorrowRecords> {
-
 }

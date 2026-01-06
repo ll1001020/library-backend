@@ -4,21 +4,22 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nie.library.VO.PaginationVO;
 import com.nie.library.VO.ResultVO;
-import com.nie.library.entity.BookCopies;
 import com.nie.library.entity.Menu;
 import com.nie.library.entity.MenuCopy;
-import com.nie.library.form.AddMenuCopyForm;
-import com.nie.library.form.EditMenuCopyForm;
+import com.nie.library.form.AddMenuForm;
+import com.nie.library.form.EditMenuForm;
 import com.nie.library.form.PaginationForm;
 import com.nie.library.form.SearchForm;
 import com.nie.library.mapper.MenuCopyMapper;
+import com.nie.library.mapper.MenuMapper;
 import com.nie.library.service.MenuCopyService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -33,6 +34,8 @@ public class MenuCopyServiceImpl extends ServiceImpl<MenuCopyMapper, MenuCopy> i
 
     @Autowired
     private MenuCopyMapper menuCopyMapper;
+    @Autowired
+    private MenuMapper menuMapper;
 
     @Override
     public ResultVO getMenuCopyList() {
@@ -77,7 +80,7 @@ public class MenuCopyServiceImpl extends ServiceImpl<MenuCopyMapper, MenuCopy> i
     public ResultVO getMenuCopy(PaginationForm paginationForm) {  // 获取带分页的所有前台菜单数据
         LambdaQueryWrapper<MenuCopy> queryWrapper = new LambdaQueryWrapper<>();
         ResultVO resultVO = new ResultVO();
-        queryWrapper.eq(MenuCopy::getStatus, "1");
+//        queryWrapper.eq(MenuCopy::getStatus, "1");
         queryWrapper.orderByAsc(MenuCopy::getMenuId);
         List<MenuCopy> allMenuList = menuCopyMapper.selectList(queryWrapper); // 成功获取到所有菜单数据储存到allMenuList中
         if (allMenuList == null){
@@ -105,7 +108,6 @@ public class MenuCopyServiceImpl extends ServiceImpl<MenuCopyMapper, MenuCopy> i
     public ResultVO searchMenuCopy(SearchForm searchForm, PaginationForm paginationForm) {
         LambdaQueryWrapper<MenuCopy> queryWrapper = new LambdaQueryWrapper<>();
         ResultVO resultVO = new ResultVO();
-        queryWrapper.eq(MenuCopy::getStatus, "1");
         queryWrapper.orderByAsc(MenuCopy::getMenuId);
         if(searchForm.getSearchType() != null){
             if(searchForm.getSearchPrecise() == 0){  // 为0表示精确查找
@@ -168,11 +170,11 @@ public class MenuCopyServiceImpl extends ServiceImpl<MenuCopyMapper, MenuCopy> i
     }
 
     @Override
-    public ResultVO addMenuCopy(AddMenuCopyForm addMenuCopyForm) {
+    public ResultVO addMenuCopy(AddMenuForm addMenuForm) {
         LambdaQueryWrapper<MenuCopy> queryWrapper = new LambdaQueryWrapper<>();
         ResultVO resultVO = new ResultVO();
-        if(addMenuCopyForm.getTitle()==null || addMenuCopyForm.getTitle().trim().isEmpty()
-            || addMenuCopyForm.getCreatorId()==null
+        if(addMenuForm.getTitle()==null || addMenuForm.getTitle().trim().isEmpty()
+            || addMenuForm.getCreatorId()==null
         ){
             resultVO.setCode(-1);
             resultVO.setMsg("菜单名称、创建用户ID不可为空！！");
@@ -182,19 +184,20 @@ public class MenuCopyServiceImpl extends ServiceImpl<MenuCopyMapper, MenuCopy> i
         int rows = 0;
         List<MenuCopy> menuCopyList = menuCopyMapper.selectList(queryWrapper);
         for(MenuCopy menu: menuCopyList){
-            if(menu.getMenuId() == addMenuCopyForm.getParentId()){
+            if(menu.getMenuId() == addMenuForm.getParentId()){
                 success++;
             }
         }
-        if(addMenuCopyForm.getParentId() == 0){
+        if(addMenuForm.getParentId() == 0){
             success++;
         }
         if(success > 0){
             MenuCopy menu = new MenuCopy();
-            menu.setTitle(addMenuCopyForm.getTitle());
-            menu.setParentId(addMenuCopyForm.getParentId());
-            menu.setCreatorId(addMenuCopyForm.getCreatorId());
-            menu.setStatus(addMenuCopyForm.getStatus());
+            menu.setPath(addMenuForm.getPath());
+            menu.setTitle(addMenuForm.getTitle());
+            menu.setParentId(addMenuForm.getParentId());
+            menu.setCreatorId(addMenuForm.getCreatorId());
+            menu.setStatus(addMenuForm.getStatus());
             rows = menuCopyMapper.insert(menu);
         }else{
             resultVO.setCode(-2);
@@ -209,26 +212,29 @@ public class MenuCopyServiceImpl extends ServiceImpl<MenuCopyMapper, MenuCopy> i
     }
 
     @Override
-    public ResultVO editSelectMenuCopy(EditMenuCopyForm editMenuCopyForm) {
+    public ResultVO editSelectMenuCopy(EditMenuForm editMenuForm) {
         LambdaQueryWrapper<MenuCopy> queryWrapper = new LambdaQueryWrapper<>();
         ResultVO resultVO = new ResultVO();
-        queryWrapper.eq(MenuCopy::getMenuId, editMenuCopyForm.getMenuId());
+        queryWrapper.eq(MenuCopy::getMenuId, editMenuForm.getMenuId());
         MenuCopy menuCopy = menuCopyMapper.selectOne(queryWrapper);
         if(menuCopy == null){
             resultVO.setCode(-1);
             resultVO.setMsg("当前选中菜单信息不存在，请重新选中！！");
             return resultVO;
         }
-        if(editMenuCopyForm.getTitle()==null || editMenuCopyForm.getTitle().trim().isEmpty()
-            || editMenuCopyForm.getStatus() == null
+        if(editMenuForm.getTitle()==null || editMenuForm.getTitle().trim().isEmpty()
+            || editMenuForm.getStatus() == null
         ){
             resultVO.setCode(-2);
             resultVO.setMsg("菜单名称、菜单状态不可为空！！");
             return resultVO;
         }
-        menuCopy.setTitle(editMenuCopyForm.getTitle());
-        menuCopy.setParentId(editMenuCopyForm.getParentId());
-        menuCopy.setStatus(editMenuCopyForm.getStatus());
+        LocalDateTime now = LocalDateTime.now();
+        menuCopy.setPath(editMenuForm.getPath());
+        menuCopy.setTitle(editMenuForm.getTitle());
+        menuCopy.setParentId(editMenuForm.getParentId());
+        menuCopy.setUpdateTime(now);
+        menuCopy.setStatus(editMenuForm.getStatus());
         int rows = menuCopyMapper.updateById(menuCopy);
         if(rows > 0){
             resultVO.setCode(0);
@@ -270,6 +276,74 @@ public class MenuCopyServiceImpl extends ServiceImpl<MenuCopyMapper, MenuCopy> i
             resultVO.setCode(0);
             resultVO.setMsg("成功删除"+rows+"条记录");
             resultVO.setData(rows);
+        }
+        return resultVO;
+    }
+
+    @Override
+    public ResultVO updateFrontMenu() {  // 更新前台主菜单
+        LambdaQueryWrapper<MenuCopy> menuQueryWrapper = new LambdaQueryWrapper<>();
+        LambdaQueryWrapper<Menu> menuQueryrWrapper = new LambdaQueryWrapper<>();
+        ResultVO resultVO = new ResultVO();
+        List<MenuCopy> menuCopyList = menuCopyMapper.selectList(menuQueryWrapper);
+        List<Menu> menuList = menuMapper.selectList(menuQueryrWrapper);
+        List<Integer> menuCopyIdList = new ArrayList<>();
+        List<Integer> menuIdList = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+        int rows = 0;
+        // 修改已有记录
+        for(MenuCopy menuCopy: menuCopyList){
+            for(Menu menu: menuList){
+                menuCopyIdList.add(menuCopy.getMenuId());
+                menuIdList.add(menu.getMenuId());
+                if(menu.getMenuId() == menuCopy.getMenuId()){
+                    menu.setMenuId(menuCopy.getMenuId());
+                    menu.setTitle(menuCopy.getTitle());
+                    menu.setPath(menuCopy.getPath());
+                    menu.setParentId(menuCopy.getParentId());
+                    menu.setCreatorId(menuCopy.getCreatorId());
+                    menu.setUpdateTime(now);
+                    menu.setStatus(menuCopy.getStatus());
+                    if(menuMapper.updateById(menu) > 0){
+                        rows++;
+                    }
+                    break;
+                }
+            }
+        }
+        // 新增主表没有的
+        for(MenuCopy menuCopy: menuCopyList){
+            if(!menuIdList.contains(menuCopy.getMenuId())){
+                Menu menu = new Menu();
+                menu.setMenuId(menuCopy.getMenuId());
+                menu.setTitle(menuCopy.getTitle());
+                menu.setParentId(menuCopy.getParentId());
+                menu.setCreatorId(menuCopy.getCreatorId());
+                menu.setCreateTime(menuCopy.getCreateTime());
+                menu.setUpdateTime(now);
+                menu.setStatus(menuCopy.getStatus());
+                if(menuMapper.insert(menu) > 0){
+                    rows++;
+                }
+            }
+        }
+
+        // 删除主表冗余的
+        for(Menu menu: menuList){
+            if(!menuCopyIdList.contains(menu.getMenuId())){
+                if(menuMapper.deleteById(menu.getMenuId())>0){
+                    rows++;
+                }
+            }
+        }
+
+        if(rows > 0){
+            resultVO.setCode(0);
+            resultVO.setMsg("成功发送修改菜单"+rows+"条");
+            resultVO.setData(rows);
+        }else{
+            resultVO.setCode(-1);
+            resultVO.setMsg("发送修改菜单失败");
         }
         return resultVO;
     }

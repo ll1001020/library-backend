@@ -53,4 +53,6 @@ public interface IUsersService extends IService<Users> {
     // 查询黑名单用户
     public ResultVO searchBlackUser(SearchForm searchForm, PaginationForm paginationForm);
 
+    // 获取当前用户所有借阅相关信息，根据用户ID
+    ResultVO getPersonalBorrowInfoByUserId(Integer id);
 }

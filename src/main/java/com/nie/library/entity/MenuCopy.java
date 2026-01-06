@@ -40,6 +40,9 @@ public class MenuCopy implements Serializable {
       @TableField("title")
     private String title;
 
+    // 组件路径
+    private String path;
+
       /**
      * 父菜单id，默认0为最高级
      */

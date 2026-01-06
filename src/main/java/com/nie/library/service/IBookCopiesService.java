@@ -40,4 +40,7 @@ public interface IBookCopiesService extends IService<BookCopies> {
 
     // 批量新增图书副本
     public ResultVO addBatchCopy(MultipartFile file);
+
+    // 根据ID获取对应书籍可借副本信息，只取第一条
+    public ResultVO getBookCopyById(Integer id);
 }

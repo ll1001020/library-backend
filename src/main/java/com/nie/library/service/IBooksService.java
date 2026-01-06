@@ -47,5 +47,6 @@ public interface IBooksService extends IService<Books> {
     // 批量录入新书籍
     public ResultVO addBatchBook(MultipartFile file);
 
-
+    // 获取本月最新的书籍
+    public ResultVO getNewBookList();
 }

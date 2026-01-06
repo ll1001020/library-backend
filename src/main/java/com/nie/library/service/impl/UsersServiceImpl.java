@@ -5,26 +5,28 @@ import com.alibaba.excel.event.AnalysisEventListener;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nie.library.DTO.PersonalDTO;
 import com.nie.library.VO.PaginationVO;
 import com.nie.library.VO.ResultVO;
-import com.nie.library.entity.BookCopies;
-import com.nie.library.entity.Books;
-import com.nie.library.entity.Users;
+import com.nie.library.entity.*;
 import com.nie.library.form.*;
+import com.nie.library.mapper.BorrowRecordsMapper;
+import com.nie.library.mapper.BorrowRecordsRequestMapper;
 import com.nie.library.mapper.UsersMapper;
 import com.nie.library.service.IUsersService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import org.apache.catalina.User;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * <p>
@@ -39,26 +41,78 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
 
     @Autowired
     private UsersMapper usersMapper;
+    // 注入加密解密
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    // 注入记录Mapper
+    @Autowired
+    private BorrowRecordsMapper borrowRecordsMapper;
+    // 注入申请Mapper
+    @Autowired
+    private BorrowRecordsRequestMapper borrowRecordsRequestMapper;
 
     @Override
     public ResultVO login(LoginForm loginForm) {
-        QueryWrapper<Users> usersQueryWrapper = new QueryWrapper<>();
+        QueryWrapper<Users> usersQueryWrapper1 = new QueryWrapper<>();
         ResultVO resultVO = new ResultVO();
         // 1.判断用户选择登录的类型
-        usersQueryWrapper.eq("user_type_id", loginForm.getLoginType());
+        usersQueryWrapper1.eq("user_type_id", loginForm.getLoginType());
         // 2.判断用户是否存在
-        usersQueryWrapper.eq("username", loginForm.getUsername());
-        Users user = usersMapper.selectOne(usersQueryWrapper);
+        usersQueryWrapper1.eq("username", loginForm.getUsername());
+        Users user = usersMapper.selectOne(usersQueryWrapper1);
+        LambdaQueryWrapper<Users> usersQueryWrapper2 = new LambdaQueryWrapper<>();
+        usersQueryWrapper2.eq(Users::getStudentId,loginForm.getUsername());
+        Users user2 = usersMapper.selectOne(usersQueryWrapper2);
 
-        if(user == null){
+        if(user == null && user2 == null){
             resultVO.setCode(-1);
             resultVO.setMsg("用户不存在");
-        }else{
+        }else if(user != null && user2 == null){
             // 3.判断密码是否正确
-            if (!user.getPassword().equals(loginForm.getPassword())){
+            boolean pass = passwordEncoder.matches(loginForm.getPassword().trim(),user.getPassword());
+            if (!pass){
                 resultVO.setCode(-2);
                 resultVO.setMsg("密码错误");
             }else{
+                LocalDateTime now = LocalDateTime.now();
+                user.setLastLoginTime(now);
+                usersMapper.updateById(user);
+                resultVO.setCode(0);
+                resultVO.setData(user);
+                resultVO.setMsg("登录成功");
+            }
+        }else if(user == null && user2 != null){
+            boolean pass = passwordEncoder.matches(loginForm.getPassword().trim(),user2.getPassword());
+            if (!pass){
+                resultVO.setCode(-2);
+                resultVO.setMsg("密码错误");
+            }else{
+                LocalDateTime now = LocalDateTime.now();
+                user.setLastLoginTime(now);
+                usersMapper.updateById(user);
+                resultVO.setCode(0);
+                resultVO.setData(user2);
+                resultVO.setMsg("登录成功");
+            }
+        }else{
+            boolean pass1 = passwordEncoder.matches(loginForm.getPassword().trim(),user.getPassword());
+            boolean pass2 = passwordEncoder.matches(loginForm.getPassword().trim(),user2.getPassword());
+            if (!pass1){
+                if (!pass2){
+                    resultVO.setCode(-2);
+                    resultVO.setMsg("密码错误");
+                }else{
+                    LocalDateTime now = LocalDateTime.now();
+                    user.setLastLoginTime(now);
+                    usersMapper.updateById(user);
+                    resultVO.setCode(0);
+                    resultVO.setData(user2);
+                    resultVO.setMsg("登录成功");
+                }
+            }else{
+                LocalDateTime now = LocalDateTime.now();
+                user.setLastLoginTime(now);
+                usersMapper.updateById(user);
                 resultVO.setCode(0);
                 resultVO.setData(user);
                 resultVO.setMsg("登录成功");
@@ -75,9 +129,9 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
         Page<Users> usersPage = usersMapper.selectPage(page, usersQueryWrapper);
         List<Users> usersList = usersPage.getRecords();
         if(usersList != null && usersList.size() > 0){
-            for(Users user : usersList){
-                user.setPassword(null);
-            }
+//            for(Users user : usersList){
+//                user.setPassword(null);
+//            }
             PaginationVO paginationVO = new PaginationVO();
             paginationVO.setCurrentPage(usersPage.getCurrent());
             paginationVO.setPageSize(usersPage.getSize());
@@ -181,12 +235,13 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
         Users user = new Users();
         if(addUserForm.getUserTypeId() == 0){
             user.setBorrowLimit(0);
-            user.setBorrowedCount(-1);
+            user.setBorrowCount(-1);
             user.setBorrowLimitDay(0);
         }
         LocalDateTime now = LocalDateTime.now();
+        String encodedPassword = passwordEncoder.encode(addUserForm.getPassword().trim());
         user.setUsername(addUserForm.getUsername());
-        user.setPassword(addUserForm.getPassword());
+        user.setPassword(encodedPassword);
         user.setRealName(addUserForm.getRealName());
         user.setStudentId(addUserForm.getStudentId());
         user.setPhone(addUserForm.getPhone());
@@ -223,7 +278,12 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
             resultVO.setMsg("用户名、学号不可为空！！！");
             return resultVO;
         }
-        // 3.没有问题后将修改后的数据覆写
+        // 3.检验密码是否为空，若为空则不修改密码
+        String encodedPassword = passwordEncoder.encode(editUserForm.getPassword().trim());
+        if(editUserForm.getPassword() != null || !editUserForm.getPassword().trim().isEmpty()){
+            user.setPassword(encodedPassword);
+        }
+        // 4.没有问题后将修改后的数据覆写
         user.setUsername(editUserForm.getUsername());
         user.setRealName(editUserForm.getRealName());
         user.setStudentId(editUserForm.getStudentId());
@@ -314,12 +374,13 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
                 Users user = new Users();
                 if(excelForm.getUserTypeId() == 0){
                     user.setBorrowLimit(0);
-                    user.setBorrowedCount(-1);
+                    user.setBorrowCount(-1);
                     user.setBorrowLimitDay(0);
                 }
                 LocalDateTime now = LocalDateTime.now();
+                String encodedPassword = passwordEncoder.encode(excelForm.getPassword());
                 user.setUsername(excelForm.getUsername());
-                user.setPassword(excelForm.getPassword());
+                user.setPassword(encodedPassword);
                 user.setRealName(excelForm.getRealName());
                 user.setStudentId(excelForm.getStudentId());
                 user.setPhone(excelForm.getPhone());
@@ -509,6 +570,46 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
         resultVO.setData(null);
         resultVO.setMsg("查询成功，没有查询结果");
         resultVO.setPaginationVO(paginationVO);
+        return resultVO;
+    }
+
+    @Override
+    public ResultVO getPersonalBorrowInfoByUserId(Integer id) {  // 获取当前用户所有借阅相关信息，根据用户ID
+        ResultVO resultVO = new ResultVO();
+        // 先获取当前用户的借阅记录
+        LambdaQueryWrapper<BorrowRecords> recordQueryWrapper = new LambdaQueryWrapper<>();
+        recordQueryWrapper.eq(BorrowRecords::getUserId, id);
+        List<BorrowRecords> currentList = new ArrayList<>(); // 定义一个集合用来存储当前借阅记录
+        List<BorrowRecords> pastList = new ArrayList<>(); // 定义一个集合用来存储历史借阅记录
+        // 判断当前借阅记录是否已经完成，若是已经完成，则划分为历史记录，若是未完成，则为当前记录
+        List<BorrowRecords> allList = borrowRecordsMapper.selectList(recordQueryWrapper);
+        for(BorrowRecords borrowRecords : allList){
+            if(borrowRecords.getBorrowStatus().equals("借阅中")){
+                currentList.add(borrowRecords);
+            }else{
+                LocalDateTime actualReturnDate = borrowRecords.getActualReturnDate();
+                if (actualReturnDate != null && actualReturnDate.isAfter(LocalDateTime.now().minusDays(3))) {
+                    pastList.add(borrowRecords);
+                }
+            }
+        }
+        // 在获取用户的预约记录
+        LambdaQueryWrapper<BorrowRecordsRequest> requestQueryWrapper = new LambdaQueryWrapper<>();
+        requestQueryWrapper.eq(BorrowRecordsRequest::getUserId, id);
+        List<BorrowRecordsRequest> requestList = borrowRecordsRequestMapper.selectList(requestQueryWrapper);
+        // 将获取到的记录全部封装到PersonalDTO中返回给前端
+        PersonalDTO personalDTO = new PersonalDTO();
+        personalDTO.setCurrentBorrow(currentList);
+        personalDTO.setPastBorrow(pastList);
+        personalDTO.setRequestBorrow(requestList);
+        if(personalDTO == null){
+            resultVO.setCode(-1);
+            resultVO.setMsg("当前用户暂无任何借阅记录");
+            return resultVO;
+        }
+        resultVO.setCode(0);
+        resultVO.setMsg("成功获取借阅记录");
+        resultVO.setData(personalDTO);
         return resultVO;
     }
 

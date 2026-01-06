@@ -80,5 +80,12 @@ public class BooksController {
         ResultVO resultVO = this.ibooksService.findBookByCategoryId(currentId);
         return resultVO;
     }
+
+    // 获取本月最新的书籍
+    @GetMapping("/getNewBookList")
+    public ResultVO getNewBookList(){
+        ResultVO resultVO = this.ibooksService.getNewBookList();
+        return resultVO;
+    }
 }
 
