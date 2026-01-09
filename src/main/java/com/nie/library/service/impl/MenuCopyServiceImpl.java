@@ -317,6 +317,7 @@ public class MenuCopyServiceImpl extends ServiceImpl<MenuCopyMapper, MenuCopy> i
                 Menu menu = new Menu();
                 menu.setMenuId(menuCopy.getMenuId());
                 menu.setTitle(menuCopy.getTitle());
+                menu.setPath(menuCopy.getPath());
                 menu.setParentId(menuCopy.getParentId());
                 menu.setCreatorId(menuCopy.getCreatorId());
                 menu.setCreateTime(menuCopy.getCreateTime());

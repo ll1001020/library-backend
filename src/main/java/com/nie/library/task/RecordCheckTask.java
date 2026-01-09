@@ -20,7 +20,7 @@ public class RecordCheckTask {
     private UsersMapper usersMapper;
 
     // 检查借书是否逾期未还
-    @Scheduled(cron = "0 0 */1 * * ?") // 每一个小时执行一次
+    @Scheduled(cron = "0 * */1 * * ?") // 每一个小时执行一次
     public void CheckRecord() {
         LambdaQueryWrapper<BorrowRecords> recordQueryWrapper = new LambdaQueryWrapper<>();
         recordQueryWrapper.eq(BorrowRecords::getBorrowStatus,"借阅中");
